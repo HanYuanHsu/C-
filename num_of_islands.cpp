@@ -1,5 +1,6 @@
 #include <vector>
 #include <iostream>
+#include <set>
 using namespace std;
 
 class Solution
@@ -24,9 +25,17 @@ private:
             p = parent[idx];
         }
 
-        // add path compression here
-
         return idx;
+    }
+
+    void union_land(int i, int j, vector<int> &parent)
+    {
+        if (parent[i] == -2 || parent[j] == -2)
+        {
+            return;
+        }
+
+        parent[j] = find(i, parent);
     }
 
 public:
@@ -34,7 +43,7 @@ public:
     {
         int m = grid.size();
         int n = grid[0].size();
-        vector<int> parent(m * n);
+        vector<int> parent;
 
         int idx = 0; // index of a location after flattening grid
 
@@ -44,8 +53,7 @@ public:
         {
             for (int j = 0; j < n; j++)
             {
-                parent[idx] = (grid[i][j] - '0') - 2;
-                idx++;
+                parent.push_back((grid[i][j] - '0') - 2);
             }
         }
 
@@ -63,52 +71,67 @@ public:
                 if (i >= 1 && grid[i - 1][j] == '1')
                 {
                     // then (i, j) belongs to the island [i-1][j] (the location ABOVE) is in
-                    if (idx - n < 0)
-                        return -3;
-                    rep = find(idx - n, parent);
-                    if (rep == -2)
-                        return -2;
-                    parent[rep] = idx;
+                    union_land(idx - n, idx, parent);
                 }
 
                 if (j >= 1 && grid[i][j - 1] == '1')
                 {
-                    // debugging
-                    if (idx - 1 < 0)
-                        return -3;
-                    rep = find(idx - 1, parent);
-
-                    // debugging
-                    if (rep == -2)
-                        return -2;
-                    parent[rep] = idx;
+                    union_land(idx - 1, idx, parent);
                 }
 
                 idx++;
             }
         }
 
-        int num_islands = 0;
-        for (int idx = 0; idx < m * n; idx++)
+        set<int> s;
+        idx = 0;
+        for (int i = 0; i < m; i++)
         {
-            if (parent[idx] == -1)
+            for (int j = 0; j < n; j++)
             {
-                num_islands++;
+                if (grid[i][j] == '1')
+                {
+                    s.insert(find(idx, parent));
+                }
+
+                idx++;
             }
         }
 
-        return num_islands;
+        /*
+        for (auto &elm : s)
+        {
+            cout << elm << endl;
+        }
+        */
+
+        idx = 0;
+        for (int i = 0; i < m; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                cout << parent[idx] << " ";
+
+                idx++;
+            }
+            cout << endl;
+        }
+
+        return s.size();
     }
 };
 
 int main()
 {
     Solution s;
-    vector<vector<char>> grid = {
+
+    vector<vector<char>> grid1 = {
         {'1', '1', '1', '1', '0'},
         {'1', '1', '0', '1', '0'},
         {'1', '1', '0', '0', '0'},
         {'0', '0', '0', '0', '0'}};
 
-    cout << s.numIslands(grid) << endl;
+    cout << s.numIslands(grid1) << endl;
 }
+
+// https://stackoverflow.com/questions/70676083/returning-the-right-number-of-islands-using-union-find
