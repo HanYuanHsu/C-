@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <functional>
+#include <queue>
 using namespace std;
 
 // this is a dense, undirected graph
@@ -12,37 +13,32 @@ using namespace std;
 // represents a cut edge between the MST and its complement
 // see
 // https://stackoverflow.com/questions/17016175/c-unordered-map-using-a-custom-class-type-as-the-key
-struct cutEdge
+
+// TODO:
+// 1. define assignment for this class
+// 2. submit to leetcode, hoping TLE is solved.
+// https://stackoverflow.com/questions/22437903/non-static-reference-member-cant-use-default-assignment-operator
+class cutEdge
 {
-    int a; // the vertex in the MST
-    int b; // the vertex in the complement
-    // int weight;
+    const vector<vector<int>> &edgeWeights;
+public:
+    int a;
+    int b;
+    cutEdge(int a, int b, const vector<vector<int>> &edgeWeights) 
+    : a(a), b(b), edgeWeights(edgeWeights) {}
 
     bool operator==(const cutEdge &other) const
     {
         return a == other.a && b == other.b;
     }
-};
 
-template <>
-struct std::hash<cutEdge>
-{
-    size_t operator()(const cutEdge &e) const
+    bool operator<(const cutEdge other) const
     {
-        size_t res = 17;
-        res = res * 31 + hash<int>()(e.a);
-        res = res * 31 + hash<int>()(e.b);
-        return res;
+        return edgeWeights[a][b] < edgeWeights[other.a][other.b];
     }
 };
 
-struct edgeComp
-{
-    bool operator()(const cutEdge &lhs, const cutEdge &rhs) const
-    {
-        return lhs.b < rhs.b;
-    }
-};
+
 
 class Solution
 {
@@ -58,10 +54,10 @@ public:
         int minCost = 0;
         int numPoints = points.size();
         vector<vector<int>> edgeWeights(numPoints, vector<int>(numPoints)); // edgeWeights[i][j] is weight between points i and j
-        vector<int> a, b;                                                   // points
-        for (int i = 0; i < numPoints; i++)
+        vector<int> a, b;                                                  // points
+        for (int i = 0; i < numPoints; ++i)
         {
-            for (int j = i + 1; j < numPoints; j++)
+            for (int j = i + 1; j < numPoints; ++j)
             {
                 a = points[i];
                 b = points[j];
@@ -70,55 +66,36 @@ public:
             }
         }
 
-        unordered_set<cutEdge> cutSet;
+        priority_queue<cutEdge> q;
         vector<bool> inMST(numPoints, false);
         int MST_size;
         inMST[0] = true;
         MST_size = 1;
         for (int j = 1; j < numPoints; j++)
         {
-            cutSet.insert({0, j});
+            cutEdge e(0, j, edgeWeights);
+            q.push(e);
         }
 
-        cutEdge cur_e;
-        int cur_weight;
-        while (!cutSet.empty() && MST_size < numPoints)
+        while (!q.empty() && MST_size < numPoints) // make sure
         {
-            // find the minimum edge in the cut
-            cur_weight = INT_MAX;
-            for (auto it = cutSet.begin(); it != cutSet.end();)
+            while (inMST[q.top().b])
             {
-                if (inMST[it->b])
-                {
-                    it = cutSet.erase(it); // erase returns the position next to
-                                           // the pointer to the removed element
-                    continue;
-                }
-
-                if (edgeWeights[it->a][it->b] < cur_weight)
-                {
-                    cur_weight = edgeWeights[it->a][it->b];
-                    cur_e = *it;
-                }
-                ++it;
+                q.pop();
             }
-
-            // now cur_e is the edge we want to add in the mst
+            cutEdge cur_e = q.top();
             inMST[cur_e.b] = true;
-            MST_size++;
-            minCost += cur_weight;
-
-            // add edges to cut set
+            ++MST_size;
+            minCost += edgeWeights[cur_e.a][cur_e.b];
+            
             for (int j = 0; j < numPoints; j++)
             {
                 if (j != cur_e.b && !inMST[j])
                 {
-                    cutEdge new_e;
-                    new_e.a = cur_e.b;
-                    new_e.b = j;
-                    cutSet.insert(new_e); // does not get inserted??
+                    cutEdge e(cur_e.b, j, edgeWeights);
+                    q.push(e);
                 }
-            }
+            }       
         }
 
         return minCost;
