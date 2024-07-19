@@ -34,7 +34,24 @@ public:
 
     bool operator<(const cutEdge other) const
     {
-        return edgeWeights[a][b] < edgeWeights[other.a][other.b];
+        return edgeWeights[a][b] > edgeWeights[other.a][other.b];
+    }
+
+    bool operator<=(const cutEdge other) const
+    {
+        return edgeWeights[a][b] >= edgeWeights[other.a][other.b];
+    }
+
+    // copy assignment
+    cutEdge& operator=(const cutEdge& other)
+    {
+        if (this != &other)
+        {
+            a = other.a;
+            b = other.b;
+        }        
+
+        return *this;
     }
 };
 
